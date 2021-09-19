@@ -1,0 +1,37 @@
+on:
+  github:
+    branches:
+      only: master
+      
+jobs:
+  CloneRepo:
+    resources:
+      instance-type: C3
+    outputs:
+     mnist:
+        type: volume
+    uses: git-checkout@v1
+    with:
+      url: context.event.github.url
+      ref: context.event.github.ref
+  Mnist:
+    env:
+      PYTHONUNBUFFERED: "1"
+    resources:
+      instance-type: P5000
+    needs:
+      - CloneRepo
+    inputs:
+      mnist: CloneRepo.outputs.mnist
+    outputs:
+      mnistoutputs:
+        type: dataset
+        with:
+          ref: demo-dataset
+    uses: script@v1
+    with:
+      script: |-
+        cd /inputs/mnist
+        pip install -r requirements.txt
+        python mnist.py
+      image: tensorflow/tensorflow:1.13.1-gpu-py3
